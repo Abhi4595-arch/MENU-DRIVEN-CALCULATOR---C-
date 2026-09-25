@@ -21,5 +21,8 @@ else()
     )
 endif()
 
+# Enable CTest
+enable_testing()
+
 # Backend
 add_subdirectory(backend)

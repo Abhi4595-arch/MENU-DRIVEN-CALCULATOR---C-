@@ -1,14 +1,47 @@
 #include "api/Server.hpp"
 #include "api/Router.hpp"
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
-
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstdint>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+using SOCKET = int;
+
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET (-1)
+#endif
+
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR (-1)
+#endif
+
+#endif
 
 namespace {
+
+#ifdef _WIN32
+
+void closeSocket(SOCKET socket) {
+    closesocket(socket);
+}
+
+#else
+
+void closeSocket(SOCKET socket) {
+    close(socket);
+}
+
+#endif
 
 std::string createHttpResponse(
     const HttpResponse& response
@@ -19,20 +52,20 @@ std::string createHttpResponse(
            << response.statusCode;
 
     if (response.statusCode == 200) {
-    output << " OK\r\n";
-}
-else if (response.statusCode == 204) {
-    output << " No Content\r\n";
-}
-else if (response.statusCode == 400) {
-    output << " Bad Request\r\n";
-}
-else if (response.statusCode == 404) {
-    output << " Not Found\r\n";
-}
-else {
-    output << "\r\n";
-}
+        output << " OK\r\n";
+    }
+    else if (response.statusCode == 204) {
+        output << " No Content\r\n";
+    }
+    else if (response.statusCode == 400) {
+        output << " Bad Request\r\n";
+    }
+    else if (response.statusCode == 404) {
+        output << " Not Found\r\n";
+    }
+    else {
+        output << "\r\n";
+    }
 
     output << "Content-Type: "
            << response.contentType
@@ -43,8 +76,8 @@ else {
            << "\r\n";
 
     output << "Access-Control-Allow-Origin: *\r\n";
-output << "Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS\r\n";
-output << "Access-Control-Allow-Headers: Content-Type\r\n";
+    output << "Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS\r\n";
+    output << "Access-Control-Allow-Headers: Content-Type\r\n";
 
     output << "Connection: close\r\n";
     output << "\r\n";
@@ -178,6 +211,8 @@ Server::~Server() {
 
 bool Server::start() {
 
+#ifdef _WIN32
+
     WSADATA wsaData;
 
     int result =
@@ -193,6 +228,8 @@ bool Server::start() {
         return false;
     }
 
+#endif
+
     serverSocket =
         socket(
             AF_INET,
@@ -207,7 +244,9 @@ bool Server::start() {
         std::cerr
             << "Failed to create server socket.\n";
 
+#ifdef _WIN32
         WSACleanup();
+#endif
 
         return false;
     }
@@ -222,7 +261,7 @@ bool Server::start() {
 
     serverAddress.sin_port =
         htons(
-            static_cast<u_short>(port)
+            static_cast<std::uint16_t>(port)
         );
 
     if (
@@ -239,8 +278,12 @@ bool Server::start() {
             << port
             << ".\n";
 
-        closesocket(serverSocket);
+        closeSocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
+
+#ifdef _WIN32
         WSACleanup();
+#endif
 
         return false;
     }
@@ -256,8 +299,12 @@ bool Server::start() {
             << port
             << ".\n";
 
-        closesocket(serverSocket);
+        closeSocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
+
+#ifdef _WIN32
         WSACleanup();
+#endif
 
         return false;
     }
@@ -399,9 +446,7 @@ void Server::acceptConnections() {
             );
         }
 
-        closesocket(
-            clientSocket
-        );
+        closeSocket(clientSocket);
     }
 }
 
@@ -421,7 +466,7 @@ void Server::stop() {
         serverSocket !=
         INVALID_SOCKET
     ) {
-        closesocket(
+        closeSocket(
             serverSocket
         );
 
@@ -429,5 +474,7 @@ void Server::stop() {
             INVALID_SOCKET;
     }
 
+#ifdef _WIN32
     WSACleanup();
+#endif
 }
