@@ -1,0 +1,1297 @@
+const API = "http://localhost:8080/api";
+const pages = document.querySelectorAll(".page");
+const navigation = document.querySelectorAll(".nav-item");
+const pageTitle = document.querySelector("#page-title");
+
+console.log("app.js loaded");
+
+/* =========================================================
+   COMMON HELPERS
+========================================================= */
+
+function setText(selector, value) {
+    const element = document.querySelector(selector);
+
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function formatNumber(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "—";
+    }
+
+    if (Number.isInteger(number)) {
+        return number.toString();
+    }
+
+    return Number(number.toFixed(10)).toString();
+}
+
+function operationName(operation) {
+    const names = {
+        "+": "Addition",
+        "-": "Subtraction",
+        "*": "Multiplication",
+        "/": "Division",
+        "%": "Modulus",
+        "^": "Power",
+        "sqrt": "Square Root",
+        "abs": "Absolute",
+        "sq": "Square",
+        "cube": "Cube",
+        "!": "Factorial",
+        "1/x": "Reciprocal",
+        "percent": "Percentage"
+    };
+
+    return names[operation] || operation || "—";
+}
+
+/* =========================================================
+   API REQUEST
+========================================================= */
+
+async function apiRequest(endpoint, options = {}) {
+    const fetchOptions = {
+        ...options,
+        headers: {
+            ...(options.headers || {})
+        }
+    };
+
+    if (options.body) {
+        fetchOptions.headers["Content-Type"] = "application/json";
+    }
+
+    const response = await fetch(`${API}${endpoint}`, fetchOptions);
+
+    let data;
+
+    try {
+        data = await response.json();
+    } catch (error) {
+        throw new Error("Invalid response from backend.");
+    }
+
+    if (!response.ok || data.success === false) {
+        throw new Error(data.error || "Request failed");
+    }
+
+    return data;
+}
+
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
+
+function openPage(page) {
+    console.log("Opening page:", page);
+
+    pages.forEach(section => {
+        section.classList.remove("active");
+    });
+
+    const selectedPage = document.getElementById(page);
+
+    if (selectedPage) {
+        selectedPage.classList.add("active");
+    }
+
+    navigation.forEach(item => {
+        item.classList.remove("active");
+
+        if (item.dataset.page === page) {
+            item.classList.add("active");
+        }
+    });
+
+    const titles = {
+        dashboard: "Dashboard",
+        calculator: "Calculator",
+        keypad: "Keypad",
+        history: "History",
+        analytics: "Analytics",
+        about: "About"
+    };
+
+    if (pageTitle) {
+        pageTitle.textContent = titles[page] || page;
+    }
+
+    switch (page) {
+        case "dashboard":
+            loadDashboard();
+            break;
+
+        case "keypad":
+            initializeKeypad();
+            break;
+
+        case "history":
+            loadHistory();
+            break;
+
+        case "analytics":
+            loadAnalytics();
+            break;
+
+        case "about":
+            checkAboutBackend();
+            break;
+
+        default:
+            break;
+    }
+}
+
+/* =========================================================
+   NAVIGATION EVENTS
+========================================================= */
+
+document.querySelectorAll("[data-page]").forEach(element => {
+    element.addEventListener("click", function () {
+        const page = this.getAttribute("data-page");
+
+        console.log("Navigation clicked:", page);
+
+        openPage(page);
+    });
+});
+
+/* =========================================================
+   BACKEND CONNECTION
+========================================================= */
+
+async function checkConnection() {
+    const status = document.querySelector(".connection-status");
+
+    try {
+        await apiRequest("/health");
+
+        console.log("C++ backend connected");
+
+        if (status) {
+            status.innerHTML = "<span></span> Connected";
+        }
+    } catch (error) {
+        console.error("Backend connection failed:", error);
+
+        if (status) {
+            status.innerHTML = "<span></span> Backend offline";
+        }
+    }
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+async function loadDashboard() {
+    try {
+        const data = await apiRequest("/analytics");
+        const analytics = data.analytics;
+
+        if (!analytics) {
+            throw new Error("Analytics data missing.");
+        }
+
+        setText(
+            "#dashboard-total",
+            analytics.totalCalculations
+        );
+
+        setText(
+            "#dashboard-rate",
+            `${formatNumber(analytics.successRate)}%`
+        );
+
+        setText(
+            "#dashboard-operation",
+            operationName(analytics.mostUsedOperation)
+        );
+    } catch (error) {
+        console.error("Dashboard error:", error);
+
+        setText("#dashboard-total", "—");
+        setText("#dashboard-rate", "—");
+        setText("#dashboard-operation", "—");
+    }
+}
+
+/* =========================================================
+   CALCULATOR
+========================================================= */
+
+let selectedOperation = null;
+
+const calculatorOperations = {
+    "+": {
+        name: "Addition",
+        description: "Add two numbers.",
+        inputs: [
+            {
+                id: "first-number",
+                label: "First number",
+                placeholder: "Enter first number"
+            },
+            {
+                id: "second-number",
+                label: "Second number",
+                placeholder: "Enter second number"
+            }
+        ]
+    },
+
+    "-": {
+        name: "Subtraction",
+        description: "Subtract the second number from the first number.",
+        inputs: [
+            {
+                id: "first-number",
+                label: "First number",
+                placeholder: "Enter first number"
+            },
+            {
+                id: "second-number",
+                label: "Second number",
+                placeholder: "Enter second number"
+            }
+        ]
+    },
+
+    "*": {
+        name: "Multiplication",
+        description: "Multiply two numbers.",
+        inputs: [
+            {
+                id: "first-number",
+                label: "First number",
+                placeholder: "Enter first number"
+            },
+            {
+                id: "second-number",
+                label: "Second number",
+                placeholder: "Enter second number"
+            }
+        ]
+    },
+
+    "/": {
+        name: "Division",
+        description: "Divide the first number by the second number.",
+        inputs: [
+            {
+                id: "first-number",
+                label: "First number",
+                placeholder: "Enter first number"
+            },
+            {
+                id: "second-number",
+                label: "Second number",
+                placeholder: "Enter second number"
+            }
+        ]
+    },
+
+    "%": {
+        name: "Modulus",
+        description: "Find the remainder after division.",
+        inputs: [
+            {
+                id: "first-number",
+                label: "First number",
+                placeholder: "Enter first number"
+            },
+            {
+                id: "second-number",
+                label: "Second number",
+                placeholder: "Enter second number"
+            }
+        ]
+    },
+
+    "^": {
+        name: "Power",
+        description: "Raise the base to the given exponent.",
+        inputs: [
+            {
+                id: "base",
+                label: "Base",
+                placeholder: "Enter base"
+            },
+            {
+                id: "exponent",
+                label: "Exponent",
+                placeholder: "Enter exponent"
+            }
+        ]
+    },
+
+    sqrt: {
+        name: "Square Root",
+        description: "Calculate the square root of a number.",
+        inputs: [
+            {
+                id: "number",
+                label: "Enter a number",
+                placeholder: "Enter number"
+            }
+        ]
+    },
+
+    abs: {
+        name: "Absolute",
+        description: "Calculate the absolute value.",
+        inputs: [
+            {
+                id: "value",
+                label: "Enter a value",
+                placeholder: "Enter value"
+            }
+        ]
+    },
+
+    sq: {
+        name: "Square",
+        description: "Calculate the square of a number.",
+        inputs: [
+            {
+                id: "number",
+                label: "Enter a number",
+                placeholder: "Enter number"
+            }
+        ]
+    },
+
+    cube: {
+        name: "Cube",
+        description: "Calculate the cube of a number.",
+        inputs: [
+            {
+                id: "number",
+                label: "Enter a number",
+                placeholder: "Enter number"
+            }
+        ]
+    },
+
+    "!": {
+        name: "Factorial",
+        description: "Calculate the factorial of a number.",
+        inputs: [
+            {
+                id: "number",
+                label: "Enter a number",
+                placeholder: "Enter number"
+            }
+        ]
+    },
+
+    "1/x": {
+        name: "Reciprocal",
+        description: "Calculate the reciprocal of a number.",
+        inputs: [
+            {
+                id: "number",
+                label: "Enter a number",
+                placeholder: "Enter number"
+            }
+        ]
+    },
+
+    percent: {
+        name: "Percentage",
+        description: "Calculate the percentage of a number.",
+        inputs: [
+            {
+                id: "percent",
+                label: "Percent of",
+                placeholder: "Enter percent"
+            },
+            {
+                id: "number",
+                label: "Number",
+                placeholder: "Enter number"
+            }
+        ]
+    }
+};
+
+/* =========================================================
+   SELECT CALCULATOR OPERATION
+========================================================= */
+
+function selectOperation(operation) {
+    selectedOperation = operation;
+
+    const config = calculatorOperations[operation];
+
+    if (!config) {
+        return;
+    }
+
+    setText("#selected-operation-name", config.name);
+    setText("#selected-operation-description", config.description);
+
+    const inputsContainer = document.querySelector(
+        "#calculator-inputs"
+    );
+
+    if (!inputsContainer) {
+        return;
+    }
+
+    inputsContainer.innerHTML = "";
+
+    config.inputs.forEach(inputConfig => {
+        const field = document.createElement("div");
+
+        field.className = "calculator-field";
+
+        field.innerHTML = `
+            <label for="${inputConfig.id}">
+                ${inputConfig.label}
+            </label>
+
+            <input
+                type="number"
+                id="${inputConfig.id}"
+                placeholder="${inputConfig.placeholder}"
+                step="any"
+                autocomplete="off"
+            >
+        `;
+
+        inputsContainer.appendChild(field);
+    });
+
+    const calculateButton = document.querySelector(
+        "#calculate-button"
+    );
+
+    if (calculateButton) {
+        calculateButton.disabled = false;
+    }
+
+    setText("#calc-result", "—");
+    setText("#calc-message", "");
+
+    const firstInput = inputsContainer.querySelector("input");
+
+    if (firstInput) {
+        firstInput.focus();
+    }
+}
+
+/* =========================================================
+   CALCULATOR OPERATION BUTTONS
+========================================================= */
+
+document.querySelectorAll(".operation-button").forEach(button => {
+    button.addEventListener("click", function () {
+        selectOperation(this.dataset.op);
+    });
+});
+
+/* =========================================================
+   CALCULATE OPERATION
+========================================================= */
+
+async function calculateOperation() {
+    if (!selectedOperation) {
+        setText(
+            "#calc-message",
+            "Please select an operation."
+        );
+
+        return;
+    }
+
+    const config = calculatorOperations[selectedOperation];
+
+    if (!config) {
+        return;
+    }
+
+    const values = {};
+
+    for (const inputConfig of config.inputs) {
+        const input = document.getElementById(inputConfig.id);
+
+        if (!input) {
+            return;
+        }
+
+        const value = input.value.trim();
+
+        if (value === "") {
+            setText(
+                "#calc-message",
+                `Please enter ${inputConfig.label.toLowerCase()}.`
+            );
+
+            input.focus();
+
+            return;
+        }
+
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            setText(
+                "#calc-message",
+                `Please enter a valid ${inputConfig.label.toLowerCase()}.`
+            );
+
+            input.focus();
+
+            return;
+        }
+
+        values[inputConfig.id] = number;
+    }
+
+    const calculateButton = document.querySelector(
+        "#calculate-button"
+    );
+
+    if (calculateButton) {
+        calculateButton.disabled = true;
+    }
+
+    setText("#calc-message", "Calculating...");
+
+    try {
+        let a;
+        let b;
+
+        if (
+            ["+", "-", "*", "/", "%", "^"].includes(
+                selectedOperation
+            )
+        ) {
+            if (selectedOperation === "^") {
+                a = values.base;
+                b = values.exponent;
+            } else {
+                a = values["first-number"];
+                b = values["second-number"];
+            }
+        } else if (selectedOperation === "percent") {
+            a = values.percent;
+            b = values.number;
+        } else {
+            if (selectedOperation === "abs") {
+                a = values.value;
+            } else {
+                a = values.number;
+            }
+        }
+
+        const body = {
+            operation: selectedOperation,
+            a: a
+        };
+
+        if (b !== undefined) {
+            body.b = b;
+        }
+
+        const data = await apiRequest(
+            "/calculate",
+            {
+                method: "POST",
+                body: JSON.stringify(body)
+            }
+        );
+
+        setText(
+            "#calc-result",
+            formatNumber(data.result)
+        );
+
+        setText(
+            "#calc-message",
+            "Calculation completed successfully."
+        );
+
+        await loadDashboard();
+    } catch (error) {
+        setText("#calc-result", "—");
+        setText("#calc-message", error.message);
+    } finally {
+        if (calculateButton) {
+            calculateButton.disabled = false;
+        }
+    }
+}
+
+/* =========================================================
+   CALCULATOR BUTTON
+========================================================= */
+
+const calculateButton = document.querySelector(
+    "#calculate-button"
+);
+
+if (calculateButton) {
+    calculateButton.addEventListener(
+        "click",
+        calculateOperation
+    );
+}
+
+/* =========================================================
+   KEYPAD
+========================================================= */
+
+let keypadExpression = "";
+let keypadInitialized = false;
+
+function initializeKeypad() {
+    if (keypadInitialized) {
+        updateKeypadDisplay();
+        return;
+    }
+
+    const buttons = document.querySelectorAll(
+        ".keypad-grid button"
+    );
+
+    buttons.forEach(button => {
+        button.addEventListener("click", function () {
+            handleKeypadInput(this.dataset.key);
+        });
+    });
+
+    keypadInitialized = true;
+
+    updateKeypadDisplay();
+}
+
+function updateKeypadDisplay() {
+    const display = document.querySelector("#key-display");
+
+    if (!display) {
+        return;
+    }
+
+    display.textContent = keypadExpression || "0";
+}
+
+function handleKeypadInput(key) {
+    if (!key) {
+        return;
+    }
+
+    /* Clear */
+
+    if (key === "C") {
+        keypadExpression = "";
+        updateKeypadDisplay();
+        return;
+    }
+
+    /* Backspace */
+
+    if (key === "back") {
+        keypadExpression = keypadExpression.slice(0, -1);
+        updateKeypadDisplay();
+        return;
+    }
+
+    /* Calculate */
+
+    if (key === "=") {
+        calculateKeypadExpression();
+        return;
+    }
+
+    /* Decimal point */
+
+    if (key === ".") {
+        const parts = keypadExpression.split(/[+\-*/]/);
+        const current = parts[parts.length - 1];
+
+        if (current.includes(".")) {
+            return;
+        }
+
+        if (
+            current === "" &&
+            keypadExpression !== ""
+        ) {
+            keypadExpression += "0";
+        }
+
+        keypadExpression += ".";
+
+        updateKeypadDisplay();
+
+        return;
+    }
+
+    /* Operators */
+
+    if (["+", "-", "*", "/"].includes(key)) {
+        if (
+            keypadExpression === "" &&
+            key === "-"
+        ) {
+            keypadExpression = "-";
+
+            updateKeypadDisplay();
+
+            return;
+        }
+
+        if (keypadExpression === "") {
+            return;
+        }
+
+        const last =
+            keypadExpression[keypadExpression.length - 1];
+
+        /*
+         * Allow "-" after another operator
+         * as a negative sign.
+         *
+         * Example:
+         * 5 * -2
+         */
+
+        if (
+            key === "-" &&
+            ["+", "-", "*", "/"].includes(last)
+        ) {
+            if (last === "-") {
+                return;
+            }
+
+            keypadExpression += "-";
+
+            updateKeypadDisplay();
+
+            return;
+        }
+
+        /*
+         * Replace an existing operator.
+         */
+
+        if (
+            ["+", "-", "*", "/"].includes(last)
+        ) {
+            keypadExpression =
+                keypadExpression.slice(0, -1);
+        }
+
+        keypadExpression += key;
+
+        updateKeypadDisplay();
+
+        return;
+    }
+
+    /* Numbers */
+
+    if (/^\d$/.test(key)) {
+        keypadExpression += key;
+
+        updateKeypadDisplay();
+
+        return;
+    }
+}
+
+/* =========================================================
+   KEYPAD CALCULATION
+========================================================= */
+
+async function calculateKeypadExpression() {
+    const expression = keypadExpression.trim();
+
+    if (!expression) {
+        return;
+    }
+
+    /*
+     * Supported expressions:
+     *
+     * 2+4
+     * 10-5
+     * 6*7
+     * 20/4
+     * -5+10
+     * 8*-2
+     * 10.5+2.5
+     */
+
+    const match = expression.match(
+    /^(-?(?:\d+(?:\.\d*)?|\.\d+))\s*([+\-*/])\s*(-?(?:\d+(?:\.\d*)?|\.\d+))$/
+);
+
+    if (!match) {
+        setText("#key-display", "Invalid");
+
+        setTimeout(updateKeypadDisplay, 1000);
+
+        return;
+    }
+
+    const a = Number(match[1]);
+    const operation = match[2];
+    const b = Number(match[3]);
+
+    if (
+        !Number.isFinite(a) ||
+        !Number.isFinite(b)
+    ) {
+        setText("#key-display", "Invalid");
+        return;
+    }
+
+    try {
+        const data = await apiRequest(
+            "/calculate",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    operation: operation,
+                    a: a,
+                    b: b
+                })
+            }
+        );
+
+        keypadExpression = formatNumber(data.result);
+
+        updateKeypadDisplay();
+
+        await loadDashboard();
+    } catch (error) {
+        console.error(
+            "Keypad calculation error:",
+            error
+        );
+
+        setText("#key-display", "Error");
+
+        setTimeout(updateKeypadDisplay, 1200);
+    }
+}
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+async function loadHistory() {
+    const historyBody =
+        document.querySelector("#history-body");
+
+    if (!historyBody) {
+        return;
+    }
+
+    historyBody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                Loading history...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const data = await apiRequest("/history");
+
+        const records =
+            Array.isArray(data.history)
+                ? data.history
+                : [];
+
+        if (records.length === 0) {
+            historyBody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        No calculation history.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        historyBody.innerHTML = records
+            .map(record => {
+                const operation =
+                    record.operation || "—";
+
+                return `
+                    <tr>
+                        <td>
+                            ${record.id}
+                        </td>
+
+                        <td>
+                            ${operationName(operation)}
+                        </td>
+
+                        <td>
+                            ${formatNumber(record.a)}
+                        </td>
+
+                        <td>
+                            ${formatNumber(record.b)}
+                        </td>
+
+                        <td>
+                            ${formatNumber(record.result)}
+                        </td>
+                    </tr>
+                `;
+            })
+            .join("");
+    } catch (error) {
+        console.error("History error:", error);
+
+        historyBody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    Failed to load history.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/* =========================================================
+   CLEAR HISTORY
+========================================================= */
+
+async function clearHistory() {
+    const button =
+        document.querySelector("#clear-history");
+
+    if (!button) {
+        return;
+    }
+
+    const originalText = button.textContent;
+
+    button.disabled = true;
+    button.textContent = "Clearing...";
+
+    try {
+        await apiRequest(
+            "/history/clear",
+            {
+                method: "DELETE"
+            }
+        );
+
+        await loadHistory();
+        await loadDashboard();
+        await loadAnalytics();
+    } catch (error) {
+        console.error(
+            "Clear history error:",
+            error
+        );
+
+        alert(error.message);
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+/* =========================================================
+   HISTORY EVENTS
+========================================================= */
+
+const clearHistoryButton =
+    document.querySelector("#clear-history");
+
+if (clearHistoryButton) {
+    clearHistoryButton.addEventListener(
+        "click",
+        clearHistory
+    );
+}
+
+/* =========================================================
+   ANALYTICS
+========================================================= */
+
+async function loadAnalytics() {
+    const total =
+        document.querySelector("#an-total");
+
+    const success =
+        document.querySelector("#an-success");
+
+    const failed =
+        document.querySelector("#an-failed");
+
+    const rate =
+        document.querySelector("#an-rate");
+
+    const most =
+        document.querySelector("#an-most");
+
+    const usageList =
+        document.querySelector("#usage-list");
+
+    if (usageList) {
+        usageList.innerHTML = `
+            <div class="usage-row">
+                <span>Loading...</span>
+            </div>
+        `;
+    }
+
+    try {
+        const data =
+            await apiRequest("/analytics");
+
+        const analytics =
+            data.analytics;
+
+        if (!analytics) {
+            throw new Error(
+                "Analytics data missing."
+            );
+        }
+
+        if (total) {
+            total.textContent =
+                analytics.totalCalculations;
+        }
+
+        if (success) {
+            success.textContent =
+                analytics.successfulCalculations;
+        }
+
+        if (failed) {
+            failed.textContent =
+                analytics.failedCalculations;
+        }
+
+        if (rate) {
+            rate.textContent =
+                `${formatNumber(
+                    analytics.successRate
+                )}%`;
+        }
+
+        if (most) {
+            most.textContent =
+                operationName(
+                    analytics.mostUsedOperation
+                );
+        }
+
+        updateAnalyticsUsage(analytics);
+    } catch (error) {
+        console.error(
+            "Analytics error:",
+            error
+        );
+
+        if (total) {
+            total.textContent = "—";
+        }
+
+        if (success) {
+            success.textContent = "—";
+        }
+
+        if (failed) {
+            failed.textContent = "—";
+        }
+
+        if (rate) {
+            rate.textContent = "—";
+        }
+
+        if (most) {
+            most.textContent = "—";
+        }
+
+        if (usageList) {
+            usageList.innerHTML = `
+                <div class="usage-row">
+                    <span>
+                        Failed to load analytics.
+                    </span>
+                </div>
+            `;
+        }
+    }
+}
+
+/* =========================================================
+   ANALYTICS OPERATION USAGE
+========================================================= */
+
+function updateAnalyticsUsage(analytics) {
+    const usageList =
+        document.querySelector("#usage-list");
+
+    if (!usageList) {
+        return;
+    }
+
+    const operations = [
+        {
+            name: "Addition",
+            count: analytics.additionCount
+        },
+        {
+            name: "Subtraction",
+            count: analytics.subtractionCount
+        },
+        {
+            name: "Multiplication",
+            count: analytics.multiplicationCount
+        },
+        {
+            name: "Division",
+            count: analytics.divisionCount
+        },
+        {
+            name: "Modulus",
+            count: analytics.modulusCount
+        },
+        {
+            name: "Power",
+            count: analytics.powerCount
+        },
+        {
+            name: "Square Root",
+            count: analytics.squareRootCount
+        },
+        {
+            name: "Absolute",
+            count: analytics.absoluteCount
+        },
+        {
+            name: "Square",
+            count: analytics.squareCount
+        },
+        {
+            name: "Cube",
+            count: analytics.cubeCount
+        },
+        {
+            name: "Factorial",
+            count: analytics.factorialCount
+        },
+        {
+            name: "Reciprocal",
+            count: analytics.reciprocalCount
+        },
+        {
+            name: "Percentage",
+            count: analytics.percentageCount
+        }
+    ];
+
+    const maxCount =
+        Math.max(
+            ...operations.map(
+                item => Number(item.count) || 0
+            ),
+            1
+        );
+
+    usageList.innerHTML =
+        operations
+            .map(item => {
+                const count =
+                    Number(item.count) || 0;
+
+                const width =
+                    count === 0
+                        ? 0
+                        : (count / maxCount) * 100;
+
+                return `
+                    <div class="usage-row">
+
+                        <span>
+                            ${item.name}
+                        </span>
+
+                        <div class="usage-bar">
+                            <i
+                                style="width: ${width}%"
+                            ></i>
+                        </div>
+
+                        <strong>
+                            ${count}
+                        </strong>
+
+                    </div>
+                `;
+            })
+            .join("");
+}
+
+/* =========================================================
+   ABOUT PAGE
+========================================================= */
+
+async function checkAboutBackend() {
+    try {
+        await apiRequest("/health");
+
+        const aboutFooter =
+            document.querySelector(".about-footer");
+
+        if (aboutFooter) {
+            const statusDot =
+                aboutFooter.querySelector(
+                    ".status-dot"
+                );
+
+            if (statusDot) {
+                statusDot.title =
+                    "Backend online";
+            }
+        }
+    } catch (error) {
+        console.error(
+            "About backend check failed:",
+            error
+        );
+    }
+}
+
+/* =========================================================
+   INITIALIZE APPLICATION
+========================================================= */
+
+async function initializeApp() {
+    console.log(
+        "Initializing application..."
+    );
+
+    await checkConnection();
+
+    await loadDashboard();
+
+    openPage("dashboard");
+
+    console.log(
+        "Application initialized"
+    );
+}
+
+initializeApp();

@@ -1,0 +1,775 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Menu Calculator</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <aside class="sidebar">
+
+      <div class="brand">
+        <div class="brand-icon">∑</div>
+        <div>
+          <strong>Menu Calculator</strong>
+          <span>Calculator Suite</span>
+        </div>
+      </div>
+
+      <nav class="navigation">
+
+        <button class="nav-item active" data-page="dashboard">
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item" data-page="calculator">
+          <span>Calculator</span>
+        </button>
+
+        <button class="nav-item" data-page="keypad">
+          <span>Keypad</span>
+        </button>
+
+        <button class="nav-item" data-page="history">
+          <span>History</span>
+        </button>
+
+        <button class="nav-item" data-page="analytics">
+          <span>Analytics</span>
+        </button>
+
+        <button class="nav-item" data-page="about">
+          <span>About</span>
+        </button>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        C++ backend online
+      </div>
+
+    </aside>
+
+
+    <main class="content">
+
+      <header class="topbar">
+
+        <div>
+          <p class="eyebrow">MENU-DRIVEN CALCULATOR</p>
+          <h1 id="page-title">Dashboard</h1>
+        </div>
+
+        <div class="connection-status">
+          <span></span>
+          Connected
+        </div>
+
+      </header>
+
+
+      <section id="dashboard" class="page active">
+
+        <div class="welcome-card">
+
+          <div class="welcome-content">
+
+            <p class="eyebrow">CALCULATOR WORKSPACE</p>
+
+            <h2>
+              Simple calculations.<br>
+              Clear results.
+            </h2>
+
+            <p>
+              Perform calculations through the C++ calculator
+              engine using the operation menu.
+            </p>
+
+            <button class="primary-button" data-page="calculator">
+              Open Calculator
+            </button>
+
+          </div>
+
+          <div class="welcome-symbol">
+            ∑
+          </div>
+
+        </div>
+
+
+        <div class="dashboard-stats">
+
+          <article class="stat-card">
+
+            <span>Total calculations</span>
+
+            <strong id="dashboard-total">—</strong>
+
+          </article>
+
+
+          <article class="stat-card">
+
+            <span>Success rate</span>
+
+            <strong id="dashboard-rate">—</strong>
+
+          </article>
+
+
+          <article class="stat-card">
+
+            <span>Most used operation</span>
+
+            <strong id="dashboard-operation">—</strong>
+
+          </article>
+
+        </div>
+
+      </section>
+    
+
+<section class="page" id="calculator">
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CALCULATION WORKSPACE</span>
+            <h1>Calculator</h1>
+            <p>Select an operation, enter the required values, and calculate.</p>
+        </div>
+    </div>
+
+
+    <!-- SELECTED OPERATION -->
+
+    <div class="calculator-input-card">
+
+        <div class="selected-operation">
+
+            <span class="eyebrow">SELECTED OPERATION</span>
+
+            <h2 id="selected-operation-name">
+                Select an operation
+            </h2>
+
+            <p id="selected-operation-description">
+                Choose an operation from the menu below.
+            </p>
+
+        </div>
+
+
+        <!-- DYNAMIC INPUTS -->
+
+        <div
+            id="calculator-inputs"
+            class="calculator-inputs"
+        >
+
+            <div class="input-placeholder">
+                Select an operation to enter values.
+            </div>
+
+        </div>
+
+
+        <!-- CALCULATE BUTTON -->
+
+        <button
+            type="button"
+            id="calculate-button"
+            class="calculate-button"
+            disabled
+        >
+            Calculate
+        </button>
+
+
+        <!-- RESULT -->
+
+        <div class="calculator-result">
+
+            <span>RESULT</span>
+
+            <strong id="calc-result">—</strong>
+
+            <p id="calc-message"></p>
+
+        </div>
+
+    </div>
+
+
+    <!-- OPERATION MENU -->
+
+    <div class="operation-menu-card">
+
+        <div class="operation-menu-header">
+
+            <div>
+                <span class="eyebrow">OPERATION MENU</span>
+                <h2>Choose an operation</h2>
+            </div>
+
+            <span class="operation-count">
+                13 operations
+            </span>
+
+        </div>
+
+
+        <div class="operation-grid">
+
+
+            <!-- ADDITION -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="+"
+            >
+                <strong>+</strong>
+                <span>Addition</span>
+            </button>
+
+
+            <!-- SUBTRACTION -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="-"
+            >
+                <strong>−</strong>
+                <span>Subtraction</span>
+            </button>
+
+
+            <!-- MULTIPLICATION -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="*"
+            >
+                <strong>×</strong>
+                <span>Multiplication</span>
+            </button>
+
+
+            <!-- DIVISION -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="/"
+            >
+                <strong>÷</strong>
+                <span>Division</span>
+            </button>
+
+
+            <!-- MODULUS -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="%"
+            >
+                <strong>%</strong>
+                <span>Modulus</span>
+            </button>
+
+
+            <!-- POWER -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="^"
+            >
+                <strong>xʸ</strong>
+                <span>Power</span>
+            </button>
+
+
+            <!-- SQUARE ROOT -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="sqrt"
+            >
+                <strong>√</strong>
+                <span>Square Root</span>
+            </button>
+
+
+            <!-- ABSOLUTE -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="abs"
+            >
+                <strong>|x|</strong>
+                <span>Absolute</span>
+            </button>
+
+
+            <!-- SQUARE -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="sq"
+            >
+                <strong>x²</strong>
+                <span>Square</span>
+            </button>
+
+
+            <!-- CUBE -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="cube"
+            >
+                <strong>x³</strong>
+                <span>Cube</span>
+            </button>
+
+
+            <!-- FACTORIAL -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="!"
+            >
+                <strong>x!</strong>
+                <span>Factorial</span>
+            </button>
+
+
+            <!-- RECIPROCAL -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="1/x"
+            >
+                <strong>1/x</strong>
+                <span>Reciprocal</span>
+            </button>
+
+
+            <!-- PERCENTAGE -->
+
+            <button
+                type="button"
+                class="operation-button"
+                data-op="percent"
+            >
+                <strong>%</strong>
+                <span>Percentage</span>
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+<section id="keypad" class="page">
+
+  <div class="calculator-heading">
+
+    <p class="eyebrow">CALCULATOR</p>
+
+    <h2>Keypad Calculator</h2>
+
+    <p class="page-description">
+      Perform calculations using the calculator keypad.
+    </p>
+
+  </div>
+
+  <!-- Existing keypad content continues here -->
+
+
+
+
+  <div class="keypad-card">
+
+    <div class="keypad-display">
+
+      <span>DISPLAY</span>
+
+      <strong id="key-display">0</strong>
+
+    </div>
+
+
+    <div class="keypad-grid">
+
+      <button data-key="C" class="key-clear">
+        C
+      </button>
+
+      <button data-key="back">
+        ⌫
+      </button>
+
+      <button data-key="/">
+        ÷
+      </button>
+
+      <button data-key="*">
+        ×
+      </button>
+
+
+      <button data-key="7">
+        7
+      </button>
+
+      <button data-key="8">
+        8
+      </button>
+
+      <button data-key="9">
+        9
+      </button>
+
+      <button data-key="-">
+        −
+      </button>
+
+
+      <button data-key="4">
+        4
+      </button>
+
+      <button data-key="5">
+        5
+      </button>
+
+      <button data-key="6">
+        6
+      </button>
+
+      <button data-key="+">
+        +
+      </button>
+
+
+      <button data-key="1">
+        1
+      </button>
+
+      <button data-key="2">
+        2
+      </button>
+
+      <button data-key="3">
+        3
+      </button>
+
+      <button data-key="=" class="key-equals">
+        =
+      </button>
+
+
+      <button data-key="0" class="key-zero">
+        0
+      </button>
+
+      <button data-key=".">
+        .
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+<section id="history" class="page">
+
+  <div class="calculator-heading">
+
+    <p class="eyebrow">ACTIVITY</p>
+
+    <h2>Calculation History</h2>
+
+    <p class="page-description">
+      Review your recent calculations and results.
+    </p>
+
+  </div>
+
+  <!-- Existing history content continues here -->
+
+
+
+  <div class="history-card">
+
+    <div class="history-header">
+
+      <div>
+        <span class="history-label">CALCULATION LOG</span>
+        <h3>Recent Calculations</h3>
+      </div>
+
+      <button
+        id="clear-history"
+        class="history-clear">
+        Clear History
+      </button>
+
+    </div>
+
+
+    <div class="history-table-wrap">
+
+      <table class="history-table">
+
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Operation</th>
+            <th>Value A</th>
+            <th>Value B</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+
+        <tbody id="history-body">
+
+  <tr>
+    <td colspan="5">
+      Loading history...
+    </td>
+  </tr>
+
+</tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</section>
+<section id="analytics" class="page">
+
+  <div class="calculator-heading">
+
+    <p class="eyebrow">INSIGHTS</p>
+
+    <h2>Analytics</h2>
+
+    <p class="page-description">
+      Overview of calculator activity and operation usage.
+    </p>
+
+  </div>
+
+
+  <div class="analytics-stats">
+
+    <div class="analytics-card">
+
+      <span>Total Calculations</span>
+
+      <strong id="an-total">—</strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+      <span>Successful</span>
+
+      <strong id="an-success">—</strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+      <span>Failed</span>
+
+      <strong id="an-failed">—</strong>
+
+    </div>
+
+
+    <div class="analytics-card">
+
+      <span>Success Rate</span>
+
+      <strong id="an-rate">—</strong>
+
+    </div>
+
+  </div>
+
+
+  <div class="analytics-layout">
+
+    <div class="analytics-card usage-card">
+
+      <div class="analytics-heading">
+
+        <div>
+
+          <span class="analytics-label">
+            OPERATION USAGE
+          </span>
+
+          <h3>Operations</h3>
+
+        </div>
+
+
+        <span
+          id="an-most"
+          class="most-used"
+        >
+          —
+        </span>
+
+      </div>
+
+
+      <div
+        id="usage-list"
+        class="usage-list"
+      >
+
+        <div class="usage-row">
+
+          <span>Loading...</span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+<section id="about" class="page">
+
+  <div class="calculator-heading">
+
+    <p class="eyebrow">PROJECT</p>
+
+    <h2>About the Calculator</h2>
+
+    <p class="page-description">
+      Information about the Menu-Driven Calculator project.
+    </p>
+
+  </div>
+
+  <!-- Existing about content continues here -->
+
+
+
+
+  <div class="about-card">
+
+    <div class="about-main">
+
+      <div class="about-mark">∑</div>
+
+      <div>
+        <span class="about-label">MENU-DRIVEN CALCULATOR</span>
+
+        <h3>
+          A C++ calculator with a clean web interface.
+        </h3>
+
+        <p>
+          The project combines a modular C++ backend,
+          REST API, calculation history and analytics
+          with a lightweight frontend.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="about-details">
+
+      <div class="about-item">
+        <span>Backend</span>
+        <strong>C++</strong>
+      </div>
+
+      <div class="about-item">
+        <span>Build System</span>
+        <strong>CMake</strong>
+      </div>
+
+      <div class="about-item">
+        <span>API</span>
+        <strong>REST</strong>
+      </div>
+
+      <div class="about-item">
+        <span>Frontend</span>
+        <strong>HTML · CSS · JS</strong>
+      </div>
+
+    </div>
+
+
+    <div class="about-footer">
+
+      <div>
+        <span class="status-dot"></span>
+        Backend service
+      </div>
+
+      <span>localhost:8080</span>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+    </main>
+
+  </div>
+
+
+  <script src="js/app.js"></script>
+
+</body>
+</html>

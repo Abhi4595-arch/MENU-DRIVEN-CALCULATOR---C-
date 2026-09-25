@@ -1,0 +1,12 @@
+************************************* Invoked: Thu Sep 24 19:18:59 2026
+[0] Arguments: C:\Users\heman\Downloads\msys2-x86_64-20260611.exe
+[5] Operations sanity check succeeded.
+[6] Warning: Cannot create lock file "C:\Users\heman\AppData\Local\Temp\msys2-x86_64-202606111234865.lock": The process cannot access the file because it is being used by another process.
+ (0x00000020)
+[27] UnableToStart : Unable to start installer : Another msys2-x86_64-20260611 instance is already running. Wait until it finishes, close it, or restart your system.
+************************************* Invoked: Thu Sep 24 19:19:40 2026
+[0] Arguments: C:\Users\heman\Downloads\msys2-x86_64-20260611.exe
+[9] Operations sanity check succeeded.
+[10] Warning: Cannot create lock file "C:\Users\heman\AppData\Local\Temp\msys2-x86_64-202606111234865.lock": The process cannot access the file because it is being used by another process.
+ (0x00000020)
+[34] UnableToStart : Unable to start installer : Another msys2-x86_64-20260611 instance is already running. Wait until it finishes, close it, or restart your system.
