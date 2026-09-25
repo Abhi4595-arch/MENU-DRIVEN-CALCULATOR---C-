@@ -2,5 +2,4 @@ build/
 .git/
 .gitignore
 Dockerfile
-frontend/
 docs/
