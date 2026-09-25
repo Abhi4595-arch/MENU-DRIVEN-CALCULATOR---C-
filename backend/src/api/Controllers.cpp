@@ -1,7 +1,6 @@
 #include "api/Controllers.hpp"
 #include "calculator/Calculator.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -12,73 +11,98 @@ bool extractJsonValue(
     const std::string& key,
     std::string& value
 ) {
-    const std::string pattern = "\"" + key + "\"";
+    const std::string quotedPattern =
+        "\"" + key + "\"";
 
-    std::size_t keyPos = json.find(pattern);
+    std::size_t keyPos =
+        json.find(quotedPattern);
 
     if (keyPos == std::string::npos) {
         return false;
     }
 
-    std::size_t colonPos = json.find(':', keyPos);
+    std::size_t colonPos =
+        json.find(':', keyPos + quotedPattern.size());
 
     if (colonPos == std::string::npos) {
         return false;
     }
 
-    std::size_t start = colonPos + 1;
+    std::size_t start =
+        colonPos + 1;
 
     while (
-        start < json.length() &&
-        (json[start] == ' ' ||
-         json[start] == '\t' ||
-         json[start] == '\r' ||
-         json[start] == '\n')
+        start < json.size() &&
+        (
+            json[start] == ' ' ||
+            json[start] == '\t' ||
+            json[start] == '\r' ||
+            json[start] == '\n'
+        )
     ) {
         ++start;
     }
 
-    if (start >= json.length()) {
+    if (start >= json.size()) {
         return false;
     }
 
-    // String value
+    /*
+     * String value.
+     *
+     * Example:
+     * "operation":"+"
+     */
     if (json[start] == '"') {
+
         ++start;
 
-        std::size_t end = json.find('"', start);
+        std::size_t end =
+            json.find('"', start);
 
         if (end == std::string::npos) {
             return false;
         }
 
-        value = json.substr(start, end - start);
+        value =
+            json.substr(
+                start,
+                end - start
+            );
 
         return true;
     }
 
-    // Numeric value
+    /*
+     * Numeric value.
+     *
+     * Example:
+     * "a":10
+     */
     std::size_t end = start;
 
     while (
-        end < json.length() &&
+        end < json.size() &&
         json[end] != ',' &&
         json[end] != '}'
     ) {
         ++end;
     }
 
-    value = json.substr(
-        start,
-        end - start
-    );
+    value =
+        json.substr(
+            start,
+            end - start
+        );
 
     while (
         !value.empty() &&
-        (value.back() == ' ' ||
-         value.back() == '\t' ||
-         value.back() == '\r' ||
-         value.back() == '\n')
+        (
+            value.back() == ' ' ||
+            value.back() == '\t' ||
+            value.back() == '\r' ||
+            value.back() == '\n'
+        )
     ) {
         value.pop_back();
     }
@@ -140,33 +164,8 @@ HttpResponse Controllers::calculate(
 ) {
     HttpResponse response;
 
-    response.contentType = "application/json";
-
-    std::cout
-        << "\n========== API DEBUG ==========\n";
-
-    std::cout
-        << "Method: "
-        << request.method
-        << "\n";
-
-    std::cout
-        << "Path: "
-        << request.path
-        << "\n";
-
-    std::cout
-        << "Body: ["
-        << request.body
-        << "]\n";
-
-    std::cout
-        << "Body length: "
-        << request.body.size()
-        << "\n";
-
-    std::cout
-        << "===============================\n";
+    response.contentType =
+        "application/json";
 
     std::string operation;
     std::string firstText;
@@ -193,7 +192,9 @@ HttpResponse Controllers::calculate(
             secondText
         );
 
-    // Operation and first operand are always required.
+    /*
+     * Operation and first operand are required.
+     */
     if (
         !operationFound ||
         !firstFound
@@ -210,9 +211,7 @@ HttpResponse Controllers::calculate(
     }
 
     /*
-     * Unary operations require only 'a'.
-     *
-     * Binary operations require both 'a' and 'b'.
+     * Unary operations.
      */
     bool unaryOperation =
         operation == "sqrt" ||
@@ -222,6 +221,9 @@ HttpResponse Controllers::calculate(
         operation == "!" ||
         operation == "1/x";
 
+    /*
+     * All binary operations require b.
+     */
     if (
         !unaryOperation &&
         !secondFound
@@ -404,11 +406,6 @@ HttpResponse Controllers::clearHistory(
     response.statusCode = 200;
     response.contentType = "application/json";
 
-    /*
-     * Use Calculator's public clearing method.
-     * Do not access HistoryManager directly because
-     * getHistoryManager() intentionally returns const.
-     */
     calculator.clearCalculationHistory();
 
     response.body =

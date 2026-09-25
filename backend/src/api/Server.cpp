@@ -1,6 +1,7 @@
 #include "api/Server.hpp"
 #include "api/Router.hpp"
 
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -96,46 +97,75 @@ std::size_t findHeaderEnd(
 std::size_t getContentLength(
     const std::string& request
 ) {
-    const std::string header =
-        "Content-Length:";
+    std::istringstream stream(request);
 
-    std::size_t position =
-        request.find(header);
+    std::string line;
 
-    if (position == std::string::npos) {
-        return 0;
-    }
+    while (std::getline(stream, line)) {
 
-    position += header.length();
+        if (
+            !line.empty() &&
+            line.back() == '\r'
+        ) {
+            line.pop_back();
+        }
 
-    while (
-        position < request.size() &&
-        (request[position] == ' ' ||
-         request[position] == '\t')
-    ) {
-        ++position;
-    }
+        std::size_t colon =
+            line.find(':');
 
-    std::size_t end =
-        request.find("\r\n", position);
+        if (colon == std::string::npos) {
+            continue;
+        }
 
-    if (end == std::string::npos) {
-        return 0;
-    }
+        std::string name =
+            line.substr(0, colon);
 
-    try {
-        return static_cast<std::size_t>(
-            std::stoul(
-                request.substr(
-                    position,
-                    end - position
-                )
+        std::string value =
+            line.substr(colon + 1);
+
+        /*
+         * HTTP header names are case-insensitive.
+         */
+        for (char& character : name) {
+            character =
+                static_cast<char>(
+                    std::tolower(
+                        static_cast<unsigned char>(
+                            character
+                        )
+                    )
+                );
+        }
+
+        if (name != "content-length") {
+            continue;
+        }
+
+        std::size_t start = 0;
+
+        while (
+            start < value.size() &&
+            (
+                value[start] == ' ' ||
+                value[start] == '\t'
             )
-        );
+        ) {
+            ++start;
+        }
+
+        try {
+            return static_cast<std::size_t>(
+                std::stoul(
+                    value.substr(start)
+                )
+            );
+        }
+        catch (...) {
+            return 0;
+        }
     }
-    catch (...) {
-        return 0;
-    }
+
+    return 0;
 }
 
 HttpRequest parseHttpRequest(
@@ -146,27 +176,23 @@ HttpRequest parseHttpRequest(
     std::size_t headerEnd =
         findHeaderEnd(rawRequest);
 
-    std::string headers;
+    if (headerEnd == std::string::npos) {
+        return request;
+    }
 
-    if (headerEnd != std::string::npos) {
-        headers =
-            rawRequest.substr(
-                0,
-                headerEnd
-            );
-    }
-    else {
-        headers = rawRequest;
-    }
+    std::string headers =
+        rawRequest.substr(
+            0,
+            headerEnd
+        );
 
     std::istringstream stream(headers);
 
     std::string requestLine;
 
-    std::getline(
-        stream,
-        requestLine
-    );
+    if (!std::getline(stream, requestLine)) {
+        return request;
+    }
 
     if (
         !requestLine.empty() &&
@@ -179,16 +205,21 @@ HttpRequest parseHttpRequest(
         requestLine
     );
 
+    std::string httpVersion;
+
     requestLineStream
         >> request.method
-        >> request.path;
+        >> request.path
+        >> httpVersion;
 
-    if (headerEnd != std::string::npos) {
-        request.body =
-            rawRequest.substr(
-                headerEnd + 4
-            );
-    }
+    /*
+     * Everything after the HTTP header separator
+     * belongs to the request body.
+     */
+    request.body =
+        rawRequest.substr(
+            headerEnd + 4
+        );
 
     return request;
 }
@@ -348,20 +379,12 @@ void Server::acceptConnections() {
                 std::cerr
                     << "Failed to accept connection.\n";
             }
-
             continue;
         }
 
         std::string rawRequest;
-
         char buffer[4096];
 
-        /*
-         * Read the HTTP request.
-         *
-         * We cannot assume that the complete
-         * request arrives in one recv() call.
-         */
         while (true) {
 
             int bytesReceived =
@@ -385,7 +408,8 @@ void Server::acceptConnections() {
                 findHeaderEnd(rawRequest);
 
             if (
-                headerEnd == std::string::npos
+                headerEnd ==
+                std::string::npos
             ) {
                 continue;
             }
@@ -402,19 +426,14 @@ void Server::acceptConnections() {
                 rawRequest.size() -
                 bodyStart;
 
-            /*
-             * For GET requests there is normally
-             * no body.
-             */
             if (contentLength == 0) {
                 break;
             }
 
-            /*
-             * Continue receiving until the complete
-             * HTTP body has arrived.
-             */
-            if (bodySize >= contentLength) {
+            if (
+                bodySize >=
+                contentLength
+            ) {
                 break;
             }
         }
@@ -426,6 +445,22 @@ void Server::acceptConnections() {
                     rawRequest
                 );
 
+            std::cerr
+                << "\n========== HTTP REQUEST DEBUG ==========\n"
+                << "Method: ["
+                << request.method
+                << "]\n"
+                << "Path:   ["
+                << request.path
+                << "]\n"
+                << "Body:   ["
+                << request.body
+                << "]\n"
+                << "Body length: "
+                << request.body.size()
+                << "\n"
+                << "========================================\n";
+
             HttpResponse response =
                 router.handleRequest(
                     request
@@ -436,14 +471,34 @@ void Server::acceptConnections() {
                     response
                 );
 
-            send(
-                clientSocket,
-                httpResponse.c_str(),
-                static_cast<int>(
-                    httpResponse.size()
-                ),
-                0
-            );
+            std::size_t totalSent = 0;
+
+            while (
+                totalSent <
+                httpResponse.size()
+            ) {
+
+                int bytesSent =
+                    send(
+                        clientSocket,
+                        httpResponse.c_str() +
+                            totalSent,
+                        static_cast<int>(
+                            httpResponse.size() -
+                            totalSent
+                        ),
+                        0
+                    );
+
+                if (bytesSent <= 0) {
+                    break;
+                }
+
+                totalSent +=
+                    static_cast<std::size_t>(
+                        bytesSent
+                    );
+            }
         }
 
         closeSocket(clientSocket);
@@ -475,6 +530,8 @@ void Server::stop() {
     }
 
 #ifdef _WIN32
+
     WSACleanup();
+
 #endif
 }
