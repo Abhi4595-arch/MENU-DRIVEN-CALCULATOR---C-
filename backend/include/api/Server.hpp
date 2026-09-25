@@ -1,7 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <winsock2.h>
+#include <cstdint>
 
 class Router;
 
@@ -18,7 +18,7 @@ private:
     Router& router;
 
     bool running;
-    SOCKET serverSocket;
+    std::intptr_t serverSocket;
 
     void acceptConnections();
 };
